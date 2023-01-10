@@ -105,21 +105,30 @@ steps:
     command: 'restore'
     projects: '**/*.csproj'
 
-- task: DotNetCoreCLI@2
-  displayName: 'Build the project - $(buildConfiguration)'
-  inputs:
-    command: 'build'
-    arguments: '--no-restore --configuration $(buildConfiguration)'
-    projects: '**/*.csproj'
+# - task: DotNetCoreCLI@2 
+#   displayName: 'Build the project - $(buildConfiguration)'
+#   inputs:
+#     command: 'build'
+#     arguments: '--no-restore --configuration $(buildConfiguration)'
+#     projects: '**/*.csproj'
 
-- task: DotNetCoreCLI@2
-  displayName: 'Publish the project - $(buildConfiguration)'
-  inputs:
-    command: 'publish'
-    projects: '**/*.csproj'
-    publishWebProjects: false
-    arguments: '--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)' #reference these variables, use the $() syntax just as you do for built-in variables.
-    zipAfterPublish: true
+# - task: DotNetCoreCLI@2
+#   displayName: 'Publish the project - $(buildConfiguration)'
+#   inputs:
+#     command: 'publish'
+#     projects: '**/*.csproj'
+#     publishWebProjects: false
+#     arguments: '--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)' #reference these variables, use the $() syntax just as you do for built-in variables.
+#     zipAfterPublish: true
+
+# templates replaces the build and publishes tasks with calls to the template that does the same tasks.
+- template: templates/build.yml
+  parameters:
+    buildConfiguration: 'Debug'
+
+- template: templates/build.yml
+  parameters:
+    buildConfiguration: 'Release'
 
 - task: PublishBuildArtifacts@1
   displayName: 'Publish Artifact: drop'
@@ -128,3 +137,10 @@ steps:
 #buildConfiguration: Specifies the build configuration.
 #wwwrootDir: Specifies the path to the wwwroot directory.
 #dotnetSdkVersion: Specifies the .NET SDK version to use.
+#To reference these variables, use the $()
+# These tasks look like the ones you defined earlier to build and publish the app.
+#  But in a template, you work with input parameters differently than you work with normal variables. Here are two differences:
+
+# In a template file, use the parameters section instead of variables to define inputs.
+# In a template file, use ${{ }} syntax instead of $() to read a parameter's value. When you read a parameter's value, you'll include the parameters section in its name. 
+#For example, ${{ parameters.buildConfiguration }}.
