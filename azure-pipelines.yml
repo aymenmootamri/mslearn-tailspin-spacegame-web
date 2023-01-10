@@ -1,42 +1,103 @@
-# ASP.NET Core
-# Build and test ASP.NET Core projects targeting .NET Core.
-# Add steps that run tests, create a NuGet package, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
+# # ASP.NET Core
+# # Build and test ASP.NET Core projects targeting .NET Core.
+# # Add steps that run tests, create a NuGet package, deploy, and more:
+# # https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
+
+# trigger:
+# - '*'
+
+# pool:
+#   vmImage: 'ubuntu-20.04'
+#   demands:  #The demands section beneath pool specifies that you need npm, the Node.js package manager, installed on the build system.
+#   - npm
+
+# variables:
+#   buildConfiguration: 'Release'
+
+# steps: #under the steps section, you see the build tasks that map to each of the script commands that we identified earlier.
+# - task: UseDotNet@2
+#   displayName: 'Use .NET SDK 6.x'
+#   inputs:
+#     packageType: sdk
+#     version: '6.x'
+
+# - task: Npm@1
+#   displayName: 'Run npm install'
+#   inputs:
+#     verbose: false
+
+# - script: './node_modules/.bin/node-sass Tailspin.SpaceGame.Web/wwwroot --output Tailspin.SpaceGame.Web/wwwroot'
+#   displayName: 'Compile Sass assets'
+
+# - task: gulp@1
+#   displayName: 'Run gulp tasks'
+
+# - script: 'echo "$(Build.DefinitionName), $(Build.BuildId), $(Build.BuildNumber)" > buildinfo.txt'  # To run general system commands, you use the CmdLine@2 or script task. The pipeline uses the script task because it's a common shortcut for CmdLine@2.
+
+
+#   displayName: 'Write build info'
+#   workingDirectory: Tailspin.SpaceGame.Web/wwwroot
+
+# - task: DotNetCoreCLI@2
+#   displayName: 'Restore project dependencies'
+#   inputs:
+#     command: 'restore'
+#     projects: '**/*.csproj'
+
+# - task: DotNetCoreCLI@2 #Azure Pipelines provides built-in build tasks that map to many common build activities
+#   displayName: 'Build the project - Release'
+#   inputs:
+#     command: 'build'
+#     arguments: '--no-restore --configuration Release'
+#     projects: '**/*.csproj'
+    
+# - task: DotNetCoreCLI@2  #uses the DotNetCoreCLI@2 task to publish or package the app's build results 
+#   displayName: 'Publish the project - Release'
+#   inputs:
+#     command: 'publish'
+#     projects: '**/*.csproj'
+#     publishWebProjects: false
+#     arguments: '--no-build --configuration Release --output $(Build.ArtifactStagingDirectory)/Release'
+#     zipAfterPublish: true
+
+# - task: PublishBuildArtifacts@1 #ses the PublishBuildArtifacts@1 task to publish the .zip file to Azure Pipelines.
+#   displayName: 'Publish Artifact: drop'
+#   condition: succeeded() #The condition argument specifies to run the task only when the previous task succeeds. succeeded() is the default condition, so you don't need to specify it. But we show it here to show its use.
+
 
 trigger:
 - '*'
 
 pool:
   vmImage: 'ubuntu-20.04'
-  demands:  #The demands section beneath pool specifies that you need npm, the Node.js package manager, installed on the build system.
+  demands:
   - npm
 
 variables:
   buildConfiguration: 'Release'
+  wwwrootDir: 'Tailspin.SpaceGame.Web/wwwroot'
+  dotnetSdkVersion: '6.x'
 
-steps: #under the steps section, you see the build tasks that map to each of the script commands that we identified earlier.
+steps:
 - task: UseDotNet@2
-  displayName: 'Use .NET SDK 6.x'
+  displayName: 'Use .NET SDK $(dotnetSdkVersion)'
   inputs:
-    packageType: sdk
-    version: '6.x'
+    version: '$(dotnetSdkVersion)'
 
 - task: Npm@1
   displayName: 'Run npm install'
   inputs:
     verbose: false
 
-- script: './node_modules/.bin/node-sass Tailspin.SpaceGame.Web/wwwroot --output Tailspin.SpaceGame.Web/wwwroot'
+- script: './node_modules/.bin/node-sass $(wwwrootDir) --output $(wwwrootDir)'
   displayName: 'Compile Sass assets'
 
 - task: gulp@1
   displayName: 'Run gulp tasks'
 
-- script: 'echo "$(Build.DefinitionName), $(Build.BuildId), $(Build.BuildNumber)" > buildinfo.txt'  # To run general system commands, you use the CmdLine@2 or script task. The pipeline uses the script task because it's a common shortcut for CmdLine@2.
-
-
+- script: 'echo "$(Build.DefinitionName), $(Build.BuildId), $(Build.BuildNumber)" > buildinfo.txt'
   displayName: 'Write build info'
-  workingDirectory: Tailspin.SpaceGame.Web/wwwroot
+  workingDirectory: $(wwwrootDir)
 
 - task: DotNetCoreCLI@2
   displayName: 'Restore project dependencies'
@@ -44,22 +105,26 @@ steps: #under the steps section, you see the build tasks that map to each of the
     command: 'restore'
     projects: '**/*.csproj'
 
-- task: DotNetCoreCLI@2 #Azure Pipelines provides built-in build tasks that map to many common build activities
-  displayName: 'Build the project - Release'
+- task: DotNetCoreCLI@2
+  displayName: 'Build the project - $(buildConfiguration)'
   inputs:
     command: 'build'
-    arguments: '--no-restore --configuration Release'
+    arguments: '--no-restore --configuration $(buildConfiguration)'
     projects: '**/*.csproj'
-    
-- task: DotNetCoreCLI@2  #uses the DotNetCoreCLI@2 task to publish or package the app's build results 
-  displayName: 'Publish the project - Release'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Publish the project - $(buildConfiguration)'
   inputs:
     command: 'publish'
     projects: '**/*.csproj'
     publishWebProjects: false
-    arguments: '--no-build --configuration Release --output $(Build.ArtifactStagingDirectory)/Release'
+    arguments: '--no-build --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/$(buildConfiguration)' #reference these variables, use the $() syntax just as you do for built-in variables.
     zipAfterPublish: true
 
-- task: PublishBuildArtifacts@1 #ses the PublishBuildArtifacts@1 task to publish the .zip file to Azure Pipelines.
+- task: PublishBuildArtifacts@1
   displayName: 'Publish Artifact: drop'
-  condition: succeeded() #The condition argument specifies to run the task only when the previous task succeeds. succeeded() is the default condition, so you don't need to specify it. But we show it here to show its use.
+  condition: succeeded()
+
+#buildConfiguration: Specifies the build configuration.
+#wwwrootDir: Specifies the path to the wwwroot directory.
+#dotnetSdkVersion: Specifies the .NET SDK version to use.
