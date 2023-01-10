@@ -8,13 +8,13 @@ trigger:
 
 pool:
   vmImage: 'ubuntu-20.04'
-  demands:
+  demands:  #The demands section beneath pool specifies that you need npm, the Node.js package manager, installed on the build system.
   - npm
 
 variables:
   buildConfiguration: 'Release'
 
-steps:
+steps: #under the steps section, you see the build tasks that map to each of the script commands that we identified earlier.
 - task: UseDotNet@2
   displayName: 'Use .NET SDK 6.x'
   inputs:
@@ -32,7 +32,9 @@ steps:
 - task: gulp@1
   displayName: 'Run gulp tasks'
 
-- script: 'echo "$(Build.DefinitionName), $(Build.BuildId), $(Build.BuildNumber)" > buildinfo.txt'
+- script: 'echo "$(Build.DefinitionName), $(Build.BuildId), $(Build.BuildNumber)" > buildinfo.txt'  # To run general system commands, you use the CmdLine@2 or script task. The pipeline uses the script task because it's a common shortcut for CmdLine@2.
+
+
   displayName: 'Write build info'
   workingDirectory: Tailspin.SpaceGame.Web/wwwroot
 
@@ -42,14 +44,14 @@ steps:
     command: 'restore'
     projects: '**/*.csproj'
 
-- task: DotNetCoreCLI@2
+- task: DotNetCoreCLI@2 #Azure Pipelines provides built-in build tasks that map to many common build activities
   displayName: 'Build the project - Release'
   inputs:
     command: 'build'
     arguments: '--no-restore --configuration Release'
     projects: '**/*.csproj'
     
-- task: DotNetCoreCLI@2
+- task: DotNetCoreCLI@2  #uses the DotNetCoreCLI@2 task to publish or package the app's build results 
   displayName: 'Publish the project - Release'
   inputs:
     command: 'publish'
@@ -58,6 +60,6 @@ steps:
     arguments: '--no-build --configuration Release --output $(Build.ArtifactStagingDirectory)/Release'
     zipAfterPublish: true
 
-- task: PublishBuildArtifacts@1
+- task: PublishBuildArtifacts@1 #ses the PublishBuildArtifacts@1 task to publish the .zip file to Azure Pipelines.
   displayName: 'Publish Artifact: drop'
-  condition: succeeded()
+  condition: succeeded() #The condition argument specifies to run the task only when the previous task succeeds. succeeded() is the default condition, so you don't need to specify it. But we show it here to show its use.
